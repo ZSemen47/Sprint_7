@@ -1,7 +1,6 @@
 import allure
-
 from data import expected_result_create_409, expected_result_ok_true, expected_result_code_400, \
-    expected_result_login_bad_request, expected_result_login_not_found
+    expected_result_login_bad_request, expected_result_login_not_found, not_existed_courier
 from methods.courier_methods import CourierMethods
 
 
@@ -21,54 +20,119 @@ class TestCourierCreate:
         response, status_code = create_courier
         assert status_code == 201
 
-    @allure.title('Успешный запрос возвращает {"ok":true}')
+    @allure.title('Успешный запрос возвращает ok true')
     def test_post_create_courier_return_ok_true(self, create_courier):
         response, status_code = create_courier
         assert response == expected_result_ok_true
 
     @allure.title('Нельзя создать двух одинаковых курьеров')
-    def test_post_create_courier_duplicate_return_4o9(self, create_courier_duplicate):
-        response, status_code = create_courier_duplicate
+    def test_post_create_courier_duplicate_return_4o9(self):
+        login_pass = CourierMethods.register_new_courier_and_return_login_password()
+        not_unique_courier = {
+            'login': login_pass[0],
+            'password': login_pass[1],
+        }
+        response, status_code = CourierMethods.create_courier(not_unique_courier)
+        creds_for_login = {
+            'login': login_pass[0],
+            'password': login_pass[1],
+        }
+        response2, status_code2 = CourierMethods().login_courier(creds_for_login)
+        CourierMethods().delete_courier(response2.get('id'))
         assert response == expected_result_create_409
 
     @allure.title('Если создать пользователя с логином, который уже есть, возвращается ошибка')
-    def test_post_create_courier_duplicate_return_4o9(self, create_courier_duplicate):
-        response, status_code = create_courier_duplicate
+    def test_post_create_courier_duplicate_return_4o9(self):
+        login_pass = CourierMethods.register_new_courier_and_return_login_password()
+        not_unique_courier = {
+            'login': login_pass[0],
+            'password': login_pass[1],
+        }
+        response, status_code, login, password, first_name = CourierMethods.create_courier(not_unique_courier)
+        creds_for_login = {
+            'login': login_pass[0],
+            'password': login_pass[1],
+        }
+        response2, status_code2 = CourierMethods().login_courier(creds_for_login)
+        CourierMethods().delete_courier(response2.get('id'))
         assert response == expected_result_create_409
 
     @allure.title('Если одного из полей нет, запрос возвращает ошибку')
-    def test_post_create_courier_without_one_filed_return_400(self, create_courier_without_one_filed):
-        response, status_code = create_courier_without_one_filed
+    def test_post_create_courier_without_one_filed_return_400(self):
+        login_pass = CourierMethods.register_new_courier_and_return_login_password()
+        not_unique_courier = {
+            'login': '',
+            'password': login_pass[1],
+        }
+        response, status_code, login, password, first_name = CourierMethods.create_courier(not_unique_courier)
+        creds_for_login = {
+            'login': login_pass[0],
+            'password': login_pass[1],
+        }
+        response2, status_code2 = CourierMethods().login_courier(creds_for_login)
+        CourierMethods().delete_courier(response2.get('id'))
         assert response == expected_result_code_400
 
 
 class TestCourierLogin:
     @allure.title('Курьер может авторизоваться')
-    def test_post_login_is_possible_and_return_200(self, create_courier_and_login):
-        response, status_code, id = create_courier_and_login
+    def test_post_login_is_possible_and_return_200(self):
+        login_pass = CourierMethods.register_new_courier_and_return_login_password()
+        creds_for_login = {
+            'login': login_pass[0],
+            'password': login_pass[1],
+        }
+        response, status_code = CourierMethods().login_courier(creds_for_login)
+        CourierMethods().delete_courier(response.get('id'))
         assert status_code == 200
 
     @allure.title('Для авторизации нужно передать все обязательные поля')
-    def test_post_login_is_possible_with_all_fields(self, create_courier_and_login):
-        response, status_code, id = create_courier_and_login
+    def test_post_login_is_possible_with_all_fields(self):
+        login_pass = CourierMethods.register_new_courier_and_return_login_password()
+        creds_for_login = {
+            'login': login_pass[0],
+            'password': login_pass[1],
+        }
+        response, status_code = CourierMethods.login_courier(creds_for_login)
         assert status_code == 200
 
     @allure.title('Система вернёт ошибку, если неправильно указать логин или пароль')
-    def test_post_login_wrong_login_pass_return_404(self, create_courier_and_login_with_wrong_pass):
-        response, status_code, id = create_courier_and_login_with_wrong_pass
+    def test_post_login_wrong_login_pass_return_404(self):
+        login_pass = CourierMethods.register_new_courier_and_return_login_password()
+        wrong_creds_for_login = {
+            'login': 'wrong login',
+            'password': login_pass[1],
+        }
+        response, status_code = CourierMethods.login_courier(wrong_creds_for_login)
         assert status_code == 404
 
     @allure.title('Если какого-то поля нет, запрос возвращает ошибку')
-    def test_post_login_without_one_field_bad_request(self, create_courier_and_login_without_one_field):
-        response, status_code, id = create_courier_and_login_without_one_field
+    def test_post_login_without_one_field_bad_request(self):
+        login_pass = CourierMethods.register_new_courier_and_return_login_password()
+        wrong_creds_for_login = {
+            'login': login_pass[0],
+            'password': '',
+        }
+        response, status_code = CourierMethods.login_courier(wrong_creds_for_login)
         assert response == expected_result_login_bad_request
 
     @allure.title('Если авторизоваться под несуществующим пользователем, запрос возвращает ошибку')
-    def test_post_login_not_existed_courier_not_found(self, login_not_existed_courier):
-        response, status_code = login_not_existed_courier
+    def test_post_login_not_existed_courier_not_found(self):
+        response, status_code = CourierMethods.login_courier(not_existed_courier)
         assert response == expected_result_login_not_found
 
     @allure.title('Успешный запрос возвращает id')
-    def test_post_login_success_return_id(self, create_courier_and_login):
-        response, status_code, id = create_courier_and_login
+    def test_post_login_success_return_id(self):
+        login_pass = CourierMethods.register_new_courier_and_return_login_password()
+        params = {
+            'login': login_pass[0],
+            'password': login_pass[1]
+        }
+        response, status_code = CourierMethods().login_courier(params)
+        creds_for_login = {
+            'login': login_pass[0],
+            'password': login_pass[1],
+        }
+        response2, status_code2 = CourierMethods.login_courier(creds_for_login)
+        CourierMethods().delete_courier(response2.get('id'))
         assert 'id' in response

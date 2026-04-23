@@ -9,50 +9,50 @@ from data import COURIER_URL, BASE_URL, COURIER_URL_FOR_DELETE
 
 
 class CourierMethods:
+    @staticmethod
     @allure.step('Создать курьера')
-    def create_courier(self, params=None):
+    def create_courier(params=None):
         if params is None:
-            params = self.generate_courier_data()
+            params = CourierMethods.generate_courier_data()
         login = params.get('login')
         password = params.get('password')
         first_name = params.get('firstName')
         response = requests.post(f'{BASE_URL}{COURIER_URL}', data=params)
         try:
             return response.json(), response.status_code, login, password, first_name
-        except response.json().decoder.JSONDecodeError:
+        except requests.exceptions.JSONDecodeError:
             return response.text, response.status_code, login, password, first_name
 
-
+    @staticmethod
     @allure.step('Логин курьера')
-    def login_courier(self, params=None):
-        # login_pass = self.register_new_courier_and_return_login_password_name()
-        # for_login_creds = {'login': login_pass[0], 'password': login_pass[1]}
+    def login_courier(params=None):
         response = requests.post(f'{BASE_URL}{COURIER_URL}/login', data=params)
         try:
             return response.json(), response.status_code
-        except response.json().decoder.JSONDecodeError:
-            return response.text, response.status_code
-
-
-    @allure.step('Удалить курьера')
-    def delete_courier(self, response_id):
-        params  = {"id": response_id}
-        response = requests.delete(f'{BASE_URL}{COURIER_URL_FOR_DELETE}{response_id}', data=params)
-        try:
-            return response.json(), response.status_code
-        except response.json().decoder.JSONDecodeError:
+        except requests.exceptions.JSONDecodeError:
             return response.text, response.status_code
 
     @staticmethod
-    def generate_courier_data():
-        def generate_random_string(length):
-            letters = string.ascii_lowercase
-            random_string = ''.join(random.choice(letters) for i in range(length))
-            return random_string
+    @allure.step('Удалить курьера')
+    def delete_courier(response_id):
+        params = {"id": response_id}
+        response = requests.delete(f'{BASE_URL}{COURIER_URL_FOR_DELETE}{response_id}', data=params)
+        try:
+            return response.json(), response.status_code
+        except requests.exceptions.JSONDecodeError:
+            return response.text, response.status_code
 
-        login = generate_random_string(10)
-        password = generate_random_string(10)
-        first_name = generate_random_string(10)
+    @staticmethod
+    def generate_random_string(length):
+        letters = string.ascii_lowercase
+        random_string = ''.join(random.choice(letters) for i in range(length))
+        return random_string
+
+    @staticmethod
+    def generate_courier_data():
+        login = CourierMethods.generate_random_string(10)
+        password = CourierMethods.generate_random_string(10)
+        first_name = CourierMethods.generate_random_string(10)
 
         params = {
             "login": login,
@@ -64,13 +64,8 @@ class CourierMethods:
 
     @staticmethod
     def generate_courier_data_without_one_field():
-        def generate_random_string(length):
-            letters = string.ascii_lowercase
-            random_string = ''.join(random.choice(letters) for i in range(length))
-            return random_string
-
-        password = generate_random_string(10)
-        first_name = generate_random_string(10)
+        password = CourierMethods.generate_random_string(10)
+        first_name = CourierMethods.generate_random_string(10)
 
         params = {
             "password": password,
@@ -80,36 +75,23 @@ class CourierMethods:
         return params
 
     @staticmethod
-    def register_new_courier_and_return_login_password_name():
-        # метод генерирует строку, состоящую только из букв нижнего регистра, в качестве параметра передаём длину строки
-        def generate_random_string(length):
-            letters = string.ascii_lowercase
-            random_string = ''.join(random.choice(letters) for i in range(length))
-            return random_string
-
-        # создаём список, чтобы метод мог его вернуть
+    def register_new_courier_and_return_login_password():
         login_pass = []
 
-        # генерируем логин, пароль и имя курьера
-        login = generate_random_string(10)
-        password = generate_random_string(10)
-        first_name = generate_random_string(10)
-
-        # собираем тело запроса
+        login = CourierMethods.generate_random_string(10)
+        password = CourierMethods.generate_random_string(10)
+        first_name = CourierMethods.generate_random_string(10)
         payload = {
             "login": login,
             "password": password,
             "firstName": first_name
         }
 
-        # отправляем запрос на регистрацию курьера и сохраняем ответ в переменную response
-        response = requests.post('https://qa-scooter.praktikum-services.ru/api/v1/courier', data=payload)
+        response = requests.post(f'{BASE_URL}{COURIER_URL}', data=payload)
 
-        # если регистрация прошла успешно (код ответа 201), добавляем в список логин и пароль курьера
         if response.status_code == 201:
             login_pass.append(login)
             login_pass.append(password)
             login_pass.append(first_name)
 
-        # возвращаем список
         return login_pass

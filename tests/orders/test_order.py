@@ -1,7 +1,6 @@
 import allure
 import pytest
 
-from data import order_params
 from methods.order_methods import OrderMethods
 
 
@@ -55,7 +54,7 @@ class TestOrder:
     ])
     @allure.title('Заказ с разными значениями цвета возвращает трек-номер')
     def test_post_create_order_return_201(self, order_data):
-        response, status_code = OrderMethods().post_order(order_params)
+        response, status_code = OrderMethods().post_order(order_data)
         assert status_code == 201 and 'track' in response
 
     @allure.title('В тело ответа возвращается список заказов')
